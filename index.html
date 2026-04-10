@@ -127,6 +127,67 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+<<<<<<< HEAD
+const auth = getAuth(app);
+
+let currentUser = null;
+
+const loader = document.getElementById("loader");
+const status = document.getElementById("status");
+const crud = document.getElementById("crud");
+const taskList = document.getElementById("taskList");
+
+function showLoader(state){ loader.style.display = state ? 'block' : 'none'; }
+function showStatus(msg){ status.innerText = msg; }
+
+window.register = async ()=>{
+  showLoader(true);
+  try{
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    await createUserWithEmailAndPassword(auth,email,pass);
+    showStatus("✅ Usuario creado correctamente");
+  }catch(e){ showStatus("❌ " + e.message); }
+  showLoader(false);
+}
+
+window.login = async ()=>{
+  showLoader(true);
+  try{
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    await signInWithEmailAndPassword(auth,email,pass);
+    showStatus("✅ Bienvenido");
+  }catch(e){ showStatus("❌ " + e.message); }
+  showLoader(false);
+}
+
+window.logout = async ()=>{
+  await signOut(auth);
+}
+
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    currentUser = user;
+    crud.style.display = 'block';
+    loadTasks();
+  }else{
+    crud.style.display = 'none';
+  }
+});
+
+async function loadTasks(){
+  taskList.innerHTML="";
+  const q = query(collection(db,"tasks"), where("uid","==",currentUser.uid));
+  const snap = await getDocs(q);
+  snap.forEach(docSnap=>{
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${docSnap.data().text}
+      <div>
+        <button class="btn-warning" onclick="editTask('${docSnap.id}','${docSnap.data().text}')">✏️</button>
+        <button class="btn-danger" onclick="deleteTask('${docSnap.id}')">❌</button>
+      </div>`;
 const auth = getAuth(app);
 
 let currentUser = null;
@@ -212,6 +273,3 @@ window.editTask = async (id,text)=>{
   }
 }
 </script>
-
-</body>
-</html>
