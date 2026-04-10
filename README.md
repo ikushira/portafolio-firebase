@@ -28,7 +28,6 @@ Aplicación web moderna con autenticación de usuarios y sistema CRUD (Crear, Le
 ## 🌐 Demo
 
 👉 https://ikushira.github.io/portafolio-firebase
-*(Reemplaza este link si aún no lo has desplegado)*
 
 ---
 
@@ -53,14 +52,6 @@ portafolio-firebase/
 
 ---
 
-## 📸 Vista previa
-
-*(Agrega aquí una captura de pantalla de tu aplicación)*
-Ejemplo:
-
-![preview](screenshot.png)
-
----
 
 ## 👨‍💻 Autor
 
