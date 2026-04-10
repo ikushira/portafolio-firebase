@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Luis Aldana | Portafolio Pro</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',sans-serif;
+  background:#0b0f14;
+  color:#e6edf3;
+}
+header{
+  text-align:center;
+  padding:60px 20px;
+  background:linear-gradient(135deg,#0b0f14,#121a22);
+}
+h1{font-size:42px;font-weight:700}
+p.subtitle{opacity:.7;margin-top:10px}
+section{padding:40px 20px;max-width:900px;margin:auto}
+.card{
+  background:#121a22;
+  padding:25px;
+  margin-bottom:20px;
+  border-radius:14px;
+  box-shadow:0 5px 20px rgba(0,0,0,.4);
+}
+input{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+  background:#1c2733;
+  color:white;
+}
+button{
+  padding:12px 18px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  margin:5px 5px 5px 0;
+  font-weight:600;
+}
+.btn-primary{background:#00ff88;color:#000}
+.btn-danger{background:#ff4d4d;color:#fff}
+.btn-warning{background:#ffc107;color:#000}
+.status{margin-top:10px;font-size:14px;opacity:.8}
+ul{list-style:none;margin-top:15px}
+li{
+  background:#1c2733;
+  padding:12px;
+  border-radius:8px;
+  margin-bottom:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.loader{
+  display:none;
+  text-align:center;
+  margin-top:10px;
+}
+.loader span{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  background:#00ff88;
+  margin:2px;
+  border-radius:50%;
+  animation:blink 1.4s infinite both;
+}
+.loader span:nth-child(2){animation-delay:.2s}
+.loader span:nth-child(3){animation-delay:.4s}
+@keyframes blink{
+  0%,80%,100%{opacity:.2}
+  40%{opacity:1}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>👨‍💻 Luis Aldana</h1>
+  <p class="subtitle">Desarrollador Web Junior | JavaScript | Firebase</p>
+</header>
+
+<section class="card">
+  <h2>🔐 Autenticación</h2>
+  <input type="email" id="email" placeholder="Correo electrónico">
+  <input type="password" id="password" placeholder="Contraseña">
+  <button class="btn-primary" onclick="register()">Registrarse</button>
+  <button class="btn-primary" onclick="login()">Iniciar sesión</button>
+  <button class="btn-danger" onclick="logout()">Cerrar sesión</button>
+  <p id="status" class="status"></p>
+  <div class="loader" id="loader">
+    <span></span><span></span><span></span>
+  </div>
+</section>
+
+<section id="crud" class="card" style="display:none">
+  <h2>📋 Mis tareas</h2>
+  <input type="text" id="taskInput" placeholder="Nueva tarea">
+  <button class="btn-primary" onclick="addTask()">Agregar</button>
+  <ul id="taskList"></ul>
+</section>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCQeOXPe_oCsg7czvQ4F_LKokAdvNTHrW4",
+  authDomain: "calzado-valencia.firebaseapp.com",
+  projectId: "calzado-valencia",
+  storageBucket: "calzado-valencia.firebasestorage.app",
+  messagingSenderId: "885392324110",
+  appId: "1:885392324110:web:87347aff4ff12650cbae5f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUser = null;
+
+const loader = document.getElementById("loader");
+const status = document.getElementById("status");
+const crud = document.getElementById("crud");
+const taskList = document.getElementById("taskList");
+
+function showLoader(state){ loader.style.display = state ? 'block' : 'none'; }
+function showStatus(msg){ status.innerText = msg; }
+
+window.register = async ()=>{
+  showLoader(true);
+  try{
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    await createUserWithEmailAndPassword(auth,email,pass);
+    showStatus("✅ Usuario creado correctamente");
+  }catch(e){ showStatus("❌ " + e.message); }
+  showLoader(false);
+}
+
+window.login = async ()=>{
+  showLoader(true);
+  try{
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    await signInWithEmailAndPassword(auth,email,pass);
+    showStatus("✅ Bienvenido");
+  }catch(e){ showStatus("❌ " + e.message); }
+  showLoader(false);
+}
+
+window.logout = async ()=>{
+  await signOut(auth);
+}
+
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    currentUser = user;
+    crud.style.display = 'block';
+    loadTasks();
+  }else{
+    crud.style.display = 'none';
+  }
+});
+
+async function loadTasks(){
+  taskList.innerHTML="";
+  const q = query(collection(db,"tasks"), where("uid","==",currentUser.uid));
+  const snap = await getDocs(q);
+  snap.forEach(docSnap=>{
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${docSnap.data().text}
+      <div>
+        <button class="btn-warning" onclick="editTask('${docSnap.id}','${docSnap.data().text}')">✏️</button>
+        <button class="btn-danger" onclick="deleteTask('${docSnap.id}')">❌</button>
+      </div>`;
+    taskList.appendChild(li);
+  });
+}
+
+window.addTask = async ()=>{
+  const input = document.getElementById("taskInput");
+  if(!input.value.trim()) return;
+  await addDoc(collection(db,"tasks"), {text:input.value, uid:currentUser.uid});
+  input.value="";
+  loadTasks();
+}
+
+window.deleteTask = async (id)=>{
+  await deleteDoc(doc(db,"tasks",id));
+  loadTasks();
+}
+
+window.editTask = async (id,text)=>{
+  const newText = prompt("Editar tarea", text);
+  if(newText){
+    await updateDoc(doc(db,"tasks",id), {text:newText});
+    loadTasks();
+  }
+}
+</script>
+
+</body>
+</html>
